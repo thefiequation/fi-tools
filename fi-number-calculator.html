@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!-- saved from url=(0067)file:///Users/jamiebiondi/Downloads/fi_number_calculator%20(1).html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FI Number Calculator · The FI Equation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff; --card: #ffffff; --bg2: #f8f7f4; --bg3: #f1efe8;
+    --text: #1a1a1a; --text2: #5f5e5a; --text3: #888780;
+    --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.16);
+    --accent: #0f6e56; --accent-soft: #e1f5ee; --track: #e8e6df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --card: #242422; --bg2: #242422; --bg3: #2c2c2a;
+      --text: #e8e6e0; --text2: #b4b2a9; --text3: #888780;
+      --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.18);
+      --accent: #5dcaa5; --accent-soft: #04342c; --track: #34332f;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.55;
+    padding: 1.5rem 1rem 2.5rem;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; }
+
+  header { margin-bottom: 1.5rem; }
+  h1 { font-size: 19px; font-weight: 600; margin-bottom: 4px; }
+  header p { font-size: 13px; color: var(--text2); }
+
+  .card { background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.25rem 1.25rem 1.5rem; }
+
+  .control { margin-bottom: 1.4rem; }
+  .control:last-of-type { margin-bottom: 0; }
+  .control-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .control-label { font-size: 13px; font-weight: 500; color: var(--text); }
+  .control-value { font-size: 15px; font-weight: 600; color: var(--accent); }
+  .control-hint { font-size: 11px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
+
+  .input-money {
+    width: 100%; font-size: 16px; font-family: inherit; color: var(--text);
+    background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 8px;
+    padding: 10px 12px; outline: none;
+  }
+  .input-money:focus { border-color: var(--accent); }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 5px;
+    border-radius: 5px; background: var(--track); outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+    border: 2px solid var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--accent);
+    cursor: pointer; border: 2px solid var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+
+  .interim {
+    margin-top: 1.1rem; padding: 0.85rem 1rem; background: var(--bg3);
+    border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .interim-label { font-size: 12px; color: var(--text2); }
+  .interim-value { font-size: 15px; font-weight: 600; color: var(--text); }
+
+  .result { margin-top: 1.1rem; padding: 1.4rem 1.25rem; background: var(--accent-soft); border-radius: 12px; text-align: center; }
+  .result-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .result-number { font-size: 34px; font-weight: 700; color: var(--text); line-height: 1.1; }
+  .result-sub { font-size: 14px; color: var(--text2); margin-top: 6px; }
+  .result-caution { font-size: 12px; color: var(--text3); margin-top: 12px; line-height: 1.5; display: none; }
+  .result-caution.show { display: block; }
+
+  .assumptions { margin-top: 1.25rem; font-size: 11px; color: var(--text3); line-height: 1.6; }
+  .assumptions strong { color: var(--text2); font-weight: 500; }
+
+  footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--border); font-size: 11px; color: var(--text3); text-align: center; }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>What's your FI number?</h1>
+    <p>Your financial independence number depends on two things you can examine: what you'll spend, and the withdrawal rate you assume. Move either and watch the number change.</p>
+  </header>
+
+  <div class="card">
+    <div class="control">
+      <div class="control-head">
+        <span class="control-label">Current annual spending</span>
+      </div>
+      <input class="input-money" type="number" id="spend" value="50000" min="0" step="1000" inputmode="numeric">
+      <div class="control-hint">Roughly what you spend in a year today. A ballpark is fine.</div>
+    </div>
+
+    <div class="control">
+      <div class="control-head">
+        <span class="control-label">Adjustment for retirement</span>
+        <span class="control-value" id="adjVal">100% of today</span>
+      </div>
+      <input type="range" id="adj" min="50" max="150" step="5" value="100">
+      <div class="control-hint" id="adjChange">No change from today's spending.</div>
+      <div class="control-hint">Spending often shifts in retirement — some costs fall (commuting, a paid-off mortgage, no more saving), others rise (healthcare, travel, time to fill). Set where you expect to land overall.</div>
+    </div>
+
+    <div class="interim">
+      <span class="interim-label">Projected retirement spending</span>
+      <span class="interim-value" id="projSpend">$50,000</span>
+    </div>
+
+    <div class="control" style="margin-top:1.4rem">
+      <div class="control-head">
+        <span class="control-label">Withdrawal rate</span>
+        <span class="control-value" id="wrVal">4.0%</span>
+      </div>
+      <input type="range" id="wr" min="3" max="8" step="0.1" value="4">
+      <div class="control-hint">The share of your portfolio you withdraw each year. The "4% rule" is the common starting point, but it's an assumption — not a guarantee. Lower is more conservative and requires a larger number.</div>
+    </div>
+
+    <div class="result">
+      <div class="result-label">Your FI number <span style="opacity:0.7">(in today's dollars)</span></div>
+      <div class="result-number" id="fiNum">$1,250,000</div>
+      <div class="result-sub" id="fiMult">25.0× your projected retirement spending</div>
+      <div class="result-caution" id="caution"></div>
+    </div>
+
+    <div class="assumptions">
+      <strong>How this works:</strong> Your FI number is your projected annual spending divided by your withdrawal rate — which is the same as multiplying it by (1 ÷ rate). A 4% rate means 25×; 3.5% means about 28.6×; 4.5% means about 22.2×. The point of moving the slider is to see how much your "number" depends on an assumption you get to choose. Everything here is shown in today's dollars — it's the target in today's purchasing power, not a future amount inflated forward. This is a rough landmark for your own thinking, not a forecast, and it doesn't account for taxes, Social Security, pensions, or other income.
+    </div>
+  </div>
+
+  <footer>
+    The FI Equation · <a href="https://www.thefiequation.com/">thefiequation.com</a> · For educational use only. Not financial advice.
+  </footer>
+</div>
+
+<script>
+  const spendEl = document.getElementById('spend');
+  const adjEl = document.getElementById('adj');
+  const wrEl = document.getElementById('wr');
+
+  const adjVal = document.getElementById('adjVal');
+  const wrVal = document.getElementById('wrVal');
+  const projSpend = document.getElementById('projSpend');
+  const fiNum = document.getElementById('fiNum');
+  const fiMult = document.getElementById('fiMult');
+
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  function compute() {
+    const spend = parseFloat(spendEl.value) || 0;
+    const adj = parseInt(adjEl.value);
+    const wr = parseFloat(wrEl.value) / 100;
+
+    adjVal.textContent = adj + '% of today';
+    wrVal.textContent = (wr*100).toFixed(1) + '%';
+
+    const projected = spend * (adj / 100);
+    projSpend.textContent = fmt(projected);
+
+    const change = projected - spend;
+    const adjChange = document.getElementById('adjChange');
+    if (change === 0) {
+      adjChange.textContent = "No change from today's spending.";
+    } else if (change > 0) {
+      adjChange.textContent = "About " + fmt(change) + " more per year than today.";
+    } else {
+      adjChange.textContent = "About " + fmt(Math.abs(change)) + " less per year than today.";
+    }
+
+    const multiple = 1 / wr;
+    const fi = projected * multiple;
+
+    fiNum.textContent = fmt(fi);
+    fiMult.textContent = multiple.toFixed(1) + '\u00d7 your projected retirement spending';
+
+    const caution = document.getElementById('caution');
+    if (wr * 100 > 5) {
+      caution.classList.add('show');
+      caution.textContent = 'A rate above about 5% is not generally considered safe to sustain indefinitely. At ' + (wr*100).toFixed(1) + '%, this number supports your spending for a limited period, not necessarily for life. Higher rates trade a smaller number now for a greater risk of running short later.';
+    } else {
+      caution.classList.remove('show');
+      caution.textContent = '';
+    }
+  }
+
+  [spendEl, adjEl, wrEl].forEach(el => {
+    el.addEventListener('input', compute);
+  });
+  compute();
+</script>
+
+
+</body></html>
