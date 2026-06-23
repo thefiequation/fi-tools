@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!-- saved from url=(0070)file:///Users/jamiebiondi/Downloads/savings-rate-calculator%20(3).html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savings Rate Calculator · The FI Equation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#fff; --card:#fff; --bg2:#f8f7f4; --bg3:#f1efe8;
+    --text:#1a1a1a; --text2:#5f5e5a; --text3:#888780;
+    --border:rgba(0,0,0,0.10); --border2:rgba(0,0,0,0.16);
+    --accent:#0f6e56; --accent-soft:#e1f5ee; --track:#e8e6df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1c1c1a; --card:#242422; --bg2:#242422; --bg3:#2c2c2a;
+      --text:#e8e6e0; --text2:#b4b2a9; --text3:#888780;
+      --border:rgba(255,255,255,0.10); --border2:rgba(255,255,255,0.18);
+      --accent:#5dcaa5; --accent-soft:#04342c; --track:#34332f;
+    }
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.55; padding:1.5rem 1rem 2.5rem; }
+  .wrap { max-width:520px; margin:0 auto; }
+  header { margin-bottom:1.5rem; }
+  h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
+  header p { font-size:13px; color:var(--text2); }
+  .card { background:var(--card); border:0.5px solid var(--border); border-radius:14px; padding:1.25rem 1.25rem 1.5rem; }
+  .field { margin-bottom:1.1rem; }
+  .field-label { font-size:13px; font-weight:500; color:var(--text); display:block; margin-bottom:5px; }
+  .field-hint { font-size:11px; color:var(--text3); margin-top:5px; line-height:1.5; }
+  .input-money { width:100%; font-size:16px; font-family:inherit; color:var(--text);
+    background:var(--bg2); border:0.5px solid var(--border2); border-radius:8px; padding:10px 12px; outline:none; }
+  .input-money:focus { border-color:var(--accent); }
+  .input-money.locked { opacity:0.55; }
+  .money-wrap { position:relative; }
+  .money-wrap .input-money { padding-left:26px; padding-right:42px; }
+  .money-prefix { position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    font-size:16px; color:var(--text3); pointer-events:none; }
+  .money-suffix { position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:12px; color:var(--text3); pointer-events:none; }
+  .money-wrap .input-money.locked ~ .money-prefix,
+  .money-wrap .input-money.locked ~ .money-suffix { opacity:0.55; }
+  .section-label { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--text3); margin-bottom:0.9rem; }
+  .divider { height:0.5px; background:var(--border); margin:1.25rem 0; }
+  .expand-btn { font-family:inherit; font-size:11.5px; color:var(--accent); background:none; border:none;
+    cursor:pointer; padding:4px 0; margin-top:6px; display:inline-flex; align-items:center; gap:4px; }
+  .expand-btn .chev { transition:transform 0.15s; display:inline-block; }
+  .expand-btn.open .chev { transform:rotate(90deg); }
+  .breakdown { margin-top:0.75rem; padding:0.9rem 1rem; background:var(--bg2); border-radius:10px; display:none; }
+  .breakdown.open { display:block; }
+  .breakdown .field:last-child { margin-bottom:0; }
+  .breakdown .field-label { font-weight:400; font-size:12px; }
+  .sub-input { width:100%; font-size:14px; font-family:inherit; color:var(--text);
+    background:var(--card); border:0.5px solid var(--border2); border-radius:7px; padding:8px 10px; outline:none; }
+  .sub-input:focus { border-color:var(--accent); }
+  .using-note { font-size:11px; color:var(--text3); margin-top:7px; font-style:italic; }
+  .row2 { display:flex; gap:8px; }
+  .row2 > div { flex:1; }
+  .tier-row { display:flex; gap:8px; align-items:flex-end; margin-bottom:8px; }
+  .tier-row > div { flex:1; }
+  .results { margin-top:1.25rem; display:flex; gap:0.75rem; }
+  .result-box { flex:1; padding:1.1rem 1rem; background:var(--accent-soft); border-radius:12px; text-align:center; }
+  .result-label { font-size:11px; color:var(--text2); margin-bottom:5px; line-height:1.3; }
+  .result-pct { font-size:30px; font-weight:700; color:var(--text); line-height:1.05; }
+  .result-amt { font-size:11px; color:var(--text3); margin-top:5px; }
+  .assumptions { margin-top:1.25rem; font-size:11px; color:var(--text3); line-height:1.6; }
+  .assumptions strong { color:var(--text2); font-weight:500; }
+  .next-link { display:flex; align-items:center; justify-content:space-between; gap:0.5rem;
+    margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg2); border:0.5px solid var(--border2);
+    border-radius:10px; text-decoration:none; color:var(--accent); font-size:13px; font-weight:600;
+    transition:border-color 0.12s; }
+  .next-link:hover { border-color:var(--accent); }
+  .next-arrow { font-size:16px; }
+  footer { margin-top:1.5rem; padding-top:1rem; border-top:0.5px solid var(--border);
+    font-size:11px; color:var(--text3); text-align:center; }
+  footer a { color:var(--accent); text-decoration:none; }
+  select.sub-input { appearance:none; -webkit-appearance:none; }
+  .sub-money-wrap { position:relative; }
+  .sub-money-wrap .sub-money { padding-left:22px; }
+  .sub-money-prefix { position:absolute; left:10px; top:50%; transform:translateY(-50%);
+    font-size:14px; color:var(--text3); pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>What's your savings rate?</h1>
+    <p>Your savings rate is the share of your income that you put toward retirement. Enter what you know. If you'd rather break it down, each section opens up.</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">What you earn</div>
+    <div class="field">
+      <label class="field-label" for="gross">Annual gross income</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="gross" value="100,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">Your total pay before taxes and deductions. Include regular bonuses and any self-employment or side income. Combining two incomes? Add both gross figures together.</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">What you save for retirement</div>
+
+    <!-- PERSONAL SAVINGS -->
+    <div class="field">
+      <label class="field-label" for="savingsTotal">Your annual retirement savings</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="savingsTotal" value="22,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">Everything you set aside for retirement yourself, across all accounts. Not sure of the total? Break it down by account.</div>
+      <button type="button" class="expand-btn" id="savingsExpand"><span class="chev">▸</span> Break it down by account</button>
+      <div class="breakdown" id="savingsBreakdown">
+        <div class="field">
+          <label class="field-label" for="b_employer">Employer retirement plans</label>
+          <div class="sub-money-wrap"><span class="sub-money-prefix">$</span><input class="sub-input sub-money" type="text" id="b_employer" inputmode="numeric" placeholder="0"></div>
+          <div class="field-hint">Your own contributions to 401(k), 403(b), 457, TSP, or deferred comp (traditional or Roth).</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="b_ira">IRAs</label>
+          <div class="sub-money-wrap"><span class="sub-money-prefix">$</span><input class="sub-input sub-money" type="text" id="b_ira" inputmode="numeric" placeholder="0"></div>
+          <div class="field-hint">Traditional or Roth IRA contributions you make on your own.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="b_self">Self-employed retirement plans</label>
+          <div class="sub-money-wrap"><span class="sub-money-prefix">$</span><input class="sub-input sub-money" type="text" id="b_self" inputmode="numeric" placeholder="0"></div>
+          <div class="field-hint">Contributions to a SEP-IRA, SIMPLE IRA, or solo 401(k) from self-employment or side-business income.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="b_brokerage">Taxable investments for retirement</label>
+          <div class="sub-money-wrap"><span class="sub-money-prefix">$</span><input class="sub-input sub-money" type="text" id="b_brokerage" inputmode="numeric" placeholder="0"></div>
+          <div class="field-hint">Stocks, index funds, ETFs, bonds, or crypto held to grow. Leave out cash and near-term savings.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="b_hsa">HSA saved for retirement</label>
+          <div class="sub-money-wrap"><span class="sub-money-prefix">$</span><input class="sub-input sub-money" type="text" id="b_hsa" inputmode="numeric" placeholder="0"></div>
+          <div class="field-hint">Only the portion you're investing and leaving untouched to grow. Not money for current medical costs.</div>
+        </div>
+        <div class="using-note" id="savingsUsingNote">Using the breakdown total: $0</div>
+      </div>
+    </div>
+
+    <!-- EMPLOYER CONTRIBUTIONS -->
+    <div class="field">
+      <label class="field-label" for="matchTotal">Employer contributions</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="matchTotal" value="4,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">What your employer adds on your behalf, in dollars for the year. Know it as a formula instead? Work it out below.</div>
+      <button type="button" class="expand-btn" id="matchExpand"><span class="chev">▸</span> Work out my match from a formula</button>
+      <div class="breakdown" id="matchBreakdown">
+        <div class="field">
+          <label class="field-label" for="m_contrib">Your contribution, as a % of pay</label>
+          <input class="sub-input" type="number" id="m_contrib" value="6" min="0" max="100" step="0.5" inputmode="decimal">
+          <div class="field-hint">How much of your salary you put into the plan. The match is capped by what you contribute.</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Match formula</label>
+          <div class="tier-row">
+            <div>
+              <label class="field-hint" for="m_rate1">Match rate</label>
+              <select class="sub-input" id="m_rate1">
+                <option value="100">100% (dollar for dollar)</option>
+                <option value="50" selected="">50% (half)</option>
+                <option value="25">25%</option>
+                <option value="0">No match</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-hint" for="m_cap1">up to this % of pay</label>
+              <input class="sub-input" type="number" id="m_cap1" value="6" min="0" max="100" step="0.5" inputmode="decimal">
+            </div>
+          </div>
+          <button type="button" class="expand-btn" id="tier2Expand"><span class="chev">▸</span> Add a second tier</button>
+          <div id="tier2Wrap" style="display:none; margin-top:8px;">
+            <div class="tier-row">
+              <div>
+                <label class="field-hint" for="m_rate2">Then match</label>
+                <select class="sub-input" id="m_rate2">
+                  <option value="100">100%</option>
+                  <option value="50" selected="">50%</option>
+                  <option value="25">25%</option>
+                  <option value="0">No match</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-hint" for="m_cap2">up to this % of pay</label>
+                <input class="sub-input" type="number" id="m_cap2" value="0" min="0" max="100" step="0.5" inputmode="decimal">
+              </div>
+            </div>
+            <div class="field-hint">The first tier covers contributions up to its cap. The second tier covers the band between the two caps.</div>
+          </div>
+        </div>
+        <div class="using-note" id="matchUsingNote">Using the formula result: $0</div>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="result-box" style="width:100%;">
+        <div class="result-label">Your savings rate</div>
+        <div class="result-pct" id="totalPct">26%</div>
+        <div class="result-amt" id="totalAmt">$26,000 saved each year</div>
+        <div class="result-amt" id="matchNote" style="margin-top:8px;">(4% is coming from your employer)</div>
+      </div>
+    </div>
+
+    <div class="assumptions">
+      <strong>How this works:</strong> Your savings rate is measured against gross income, the figure you already know and the one most retirement guidance uses. The rate shown includes your employer's contributions alongside your own, since that money is real and compounding for you. The note tells you how much of the rate your employer is providing, so you can see your own share. This counts saving that builds an invested portfolio you can draw on later. It leaves out a few things that grow your security or net worth in other ways: extra mortgage payments, real estate and other assets you don't plan to draw down like a portfolio, and cash-like holdings such as a high-yield savings account, CDs, or money market funds. Those matter, they just work through a different path, by lowering what you'll need or holding steady rather than building what you'll spend.
+    </div>
+
+    <a class="next-link" id="nextLink" href="file:///Users/jamiebiondi/Downloads/fi-timeline-calculator.html?gross=100000&amp;rate=26">
+      <span class="next-text">Now see how long this rate takes to reach FI</span>
+      <span class="next-arrow">→</span>
+    </a>
+  </div>
+
+  <footer>
+    The FI Equation · <a href="https://www.thefiequation.com/">thefiequation.com</a> · For educational use only. Not financial advice.
+  </footer>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function num(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
+  function formatField(input){
+    const raw = input.value.replace(/[^0-9]/g,'');
+    input.value = (raw === '') ? '' : parseInt(raw,10).toLocaleString('en-US');
+  }
+
+  let savingsMode = 'total';   // 'total' or 'breakdown'
+  let matchMode = 'total';     // 'total' or 'formula'
+
+  // expand toggles
+  $('savingsExpand').addEventListener('click', () => {
+    const open = $('savingsBreakdown').classList.toggle('open');
+    $('savingsExpand').classList.toggle('open', open);
+    savingsMode = open ? 'breakdown' : 'total';
+    $('savingsTotal').classList.toggle('locked', open);
+    $('savingsTotal').readOnly = open;
+    compute();
+  });
+  $('matchExpand').addEventListener('click', () => {
+    const open = $('matchBreakdown').classList.toggle('open');
+    $('matchExpand').classList.toggle('open', open);
+    matchMode = open ? 'formula' : 'total';
+    $('matchTotal').classList.toggle('locked', open);
+    $('matchTotal').readOnly = open;
+    compute();
+  });
+  $('tier2Expand').addEventListener('click', () => {
+    const w = $('tier2Wrap');
+    const show = w.style.display === 'none';
+    w.style.display = show ? 'block' : 'none';
+    $('tier2Expand').classList.toggle('open', show);
+    compute();
+  });
+
+  function personalSavings(){
+    if (savingsMode === 'breakdown'){
+      const sum = ['b_employer','b_ira','b_self','b_brokerage','b_hsa']
+        .reduce((a,id)=> a + num($(id).value), 0);
+      $('savingsUsingNote').textContent = 'Using the breakdown total: ' + fmt(sum);
+      $('savingsTotal').value = sum ? sum.toLocaleString('en-US') : '0';
+      return sum;
+    }
+    return num($('savingsTotal').value);
+  }
+
+  function employerMatch(gross){
+    if (matchMode === 'formula'){
+      const contrib = parseFloat($('m_contrib').value) || 0;
+      const rate1 = parseFloat($('m_rate1').value) || 0;
+      const cap1 = parseFloat($('m_cap1').value) || 0;
+      const tier2On = $('tier2Wrap').style.display !== 'none';
+      const rate2 = tier2On ? (parseFloat($('m_rate2').value) || 0) : 0;
+      const cap2 = tier2On ? (parseFloat($('m_cap2').value) || 0) : cap1;
+
+      let matched = 0;
+      // tier 1: band 0..cap1
+      const band1 = Math.max(0, Math.min(contrib, cap1) - 0);
+      matched += gross * (band1/100) * (rate1/100);
+      // tier 2: band cap1..cap2
+      if (tier2On && cap2 > cap1){
+        const band2 = Math.max(0, Math.min(contrib, cap2) - cap1);
+        matched += gross * (band2/100) * (rate2/100);
+      }
+      $('matchUsingNote').textContent = 'Using the formula result: ' + fmt(matched);
+      $('matchTotal').value = matched ? Math.round(matched).toLocaleString('en-US') : '0';
+      return matched;
+    }
+    return num($('matchTotal').value);
+  }
+
+  function compute(){
+    const gross = num($('gross').value);
+    const personal = personalSavings();
+    const match = employerMatch(gross);
+    const total = personal + match;
+
+    const totalPct = $('totalPct');
+    const totalAmt = $('totalAmt');
+    const matchNote = $('matchNote');
+
+    if (gross <= 0){
+      totalPct.textContent = '\u2014';
+      totalAmt.textContent = '';
+      matchNote.textContent = '';
+      return;
+    }
+    totalPct.textContent = Math.round(total/gross*100) + '%';
+    totalAmt.textContent = fmt(total) + ' saved each year';
+    if (match > 0){
+      matchNote.textContent = '(' + Math.round(match/gross*100) + '% is coming from your employer)';
+      matchNote.style.display = '';
+    } else {
+      matchNote.style.display = 'none';
+    }
+    const totalRate = Math.round(total/gross*100);
+    $('nextLink').href = 'fi-timeline-calculator.html?gross=' + Math.round(gross) + '&rate=' + totalRate;
+  }
+
+  const dollarFields = ['gross','savingsTotal','matchTotal','b_employer','b_ira','b_self','b_brokerage','b_hsa'];
+  dollarFields.forEach(id=>{
+    $(id).addEventListener('input', () => { formatField($(id)); compute(); });
+  });
+  ['m_contrib','m_rate1','m_cap1','m_rate2','m_cap2'].forEach(id=>{
+    $(id).addEventListener('input', compute);
+    $(id).addEventListener('change', compute);
+  });
+  compute();
+</script>
+
+
+</body></html>
