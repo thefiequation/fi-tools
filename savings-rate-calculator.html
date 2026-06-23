@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<!-- saved from url=(0070)file:///Users/jamiebiondi/Downloads/savings-rate-calculator%20(1).html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savings Rate Calculator · The FI Equation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#fff; --card:#fff; --bg2:#f8f7f4; --bg3:#f1efe8;
+    --text:#1a1a1a; --text2:#5f5e5a; --text3:#888780;
+    --border:rgba(0,0,0,0.10); --border2:rgba(0,0,0,0.16);
+    --accent:#0f6e56; --accent-soft:#e1f5ee; --track:#e8e6df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1c1c1a; --card:#242422; --bg2:#242422; --bg3:#2c2c2a;
+      --text:#e8e6e0; --text2:#b4b2a9; --text3:#888780;
+      --border:rgba(255,255,255,0.10); --border2:rgba(255,255,255,0.18);
+      --accent:#5dcaa5; --accent-soft:#04342c; --track:#34332f;
+    }
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.55; padding:1.5rem 1rem 2.5rem; }
+  .wrap { max-width:520px; margin:0 auto; }
+  header { margin-bottom:1.5rem; }
+  h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
+  header p { font-size:13px; color:var(--text2); }
+  .card { background:var(--card); border:0.5px solid var(--border); border-radius:14px; padding:1.25rem 1.25rem 1.5rem; }
+  .field { margin-bottom:1.1rem; }
+  .field:last-of-type { margin-bottom:0; }
+  .field-label { font-size:13px; font-weight:500; color:var(--text); display:block; margin-bottom:5px; }
+  .field-hint { font-size:11px; color:var(--text3); margin-top:5px; line-height:1.5; }
+  .input-money { width:100%; font-size:16px; font-family:inherit; color:var(--text);
+    background:var(--bg2); border:0.5px solid var(--border2); border-radius:8px; padding:10px 12px; outline:none; }
+  .input-money:focus { border-color:var(--accent); }
+  .money-wrap { position:relative; }
+  .money-wrap .input-money { padding-left:26px; padding-right:42px; }
+  .money-prefix { position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    font-size:16px; color:var(--text3); pointer-events:none; }
+  .money-suffix { position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:12px; color:var(--text3); pointer-events:none; }
+  .divider { height:0.5px; background:var(--border); margin:1.25rem 0; }
+  .section-label { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--text3); margin-bottom:0.9rem; }
+  .results { margin-top:1.25rem; display:flex; gap:0.75rem; }
+  .result-box { flex:1; padding:1.1rem 1rem; background:var(--accent-soft); border-radius:12px; text-align:center; }
+  .result-box.single { padding:1.5rem 1rem; }
+  .result-label { font-size:11px; color:var(--text2); margin-bottom:5px; line-height:1.3; }
+  .result-pct { font-size:30px; font-weight:700; color:var(--text); line-height:1.05; }
+  .result-box.single .result-pct { font-size:38px; }
+  .result-amt { font-size:11px; color:var(--text3); margin-top:5px; }
+  .result-box.single .result-amt { font-size:13px; color:var(--text2); margin-top:7px; }
+  .result-note { font-size:12px; color:var(--text3); margin-top:10px; line-height:1.4; }
+  .result-note.hidden { display:none; }
+  .basis { margin-top:1rem; padding:0.8rem 1rem; background:var(--bg3); border-radius:10px;
+    display:flex; justify-content:space-between; align-items:center; }
+  .basis-label { font-size:12px; color:var(--text2); }
+  .basis-val { font-size:14px; font-weight:600; color:var(--text); }
+  .assumptions { margin-top:1.25rem; font-size:11px; color:var(--text3); line-height:1.6; }
+  .assumptions strong { color:var(--text2); font-weight:500; }
+  .next-link { display:flex; align-items:center; justify-content:space-between; gap:0.5rem;
+    margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg2); border:0.5px solid var(--border2);
+    border-radius:10px; text-decoration:none; color:var(--accent); font-size:13px; font-weight:600;
+    transition:border-color 0.12s; }
+  .next-link:hover { border-color:var(--accent); }
+  .next-arrow { font-size:16px; }
+  footer { margin-top:1.5rem; padding-top:1rem; border-top:0.5px solid var(--border);
+    font-size:11px; color:var(--text3); text-align:center; }
+  footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>What's your savings rate?</h1>
+    <p>Your savings rate is the share of your income that you put toward retirement. This finds it using gross income, your total annual pay before taxes and deductions.</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">What you earn</div>
+    <div class="field">
+      <label class="field-label" for="gross">Annual gross income</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="gross" value="100,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">Your total pay before taxes and deductions: salary or wages, plus bonuses, commissions, and any other regular income you want to measure against. The top-line figure, not your take-home.</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">What you save for retirement</div>
+
+    <div class="field">
+      <label class="field-label" for="employer">Employer retirement plans</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="employer" value="15,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">Your own contributions to plans through work: traditional or Roth 401(k), 403(b), 457, TSP, or deferred compensation.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="match">Employer match and contributions</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="match" value="4,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">What your employer puts in on your behalf. Real money compounding for you, shown in your total rate but kept out of your personal rate.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="ira">IRAs</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="ira" value="7,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">Traditional or Roth IRA contributions you make on your own, outside of work.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="brokerage">Taxable investments for retirement</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="brokerage" value="0" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">A regular investment account you're funding for retirement: stocks, index funds, ETFs, bonds, or crypto held to grow. Leave out cash savings and money set aside for nearer-term goals.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="hsa">HSA saved for retirement</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="hsa" value="0" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+      <div class="field-hint">Only the portion of your HSA you're investing and leaving untouched to grow for retirement. Do not include money you'll use for current or near-term medical expenses.</div>
+    </div>
+
+    <div class="results">
+      <div class="result-box single">
+        <div class="result-label">Your savings rate</div>
+        <div class="result-pct" id="totalPct">26%</div>
+        <div class="result-amt" id="totalAmt">$26,000 saved each year</div>
+        <div class="result-note" id="employerNote">About 4% is coming from your employer</div>
+      </div>
+    </div>
+
+    <div class="assumptions">
+      <strong>How this works:</strong> Your savings rate is measured against gross income, the figure you already know and the one most retirement guidance uses. The rate shown includes your employer's contributions alongside your own, since that money is real and compounding for you. The note tells you how much of the rate your employer is providing, so you can see your own share. This counts saving that builds an invested portfolio you can draw on later. It leaves out a few things that grow your security or net worth in other ways: extra mortgage payments, real estate and other assets you don't plan to draw down like a portfolio, and cash-like holdings such as a high-yield savings account, CDs, or money market funds. Those matter, they just work through a different path, by lowering what you'll need or holding steady rather than building what you'll spend.
+    </div>
+
+    <a class="next-link" id="nextLink" href="file:///Users/jamiebiondi/Downloads/fi-timeline-calculator.html?gross=100000&amp;rate=22">
+      <span class="next-text">Now see how long this rate takes to reach FI</span>
+      <span class="next-arrow">→</span>
+    </a>
+  </div>
+
+  <footer>
+    The FI Equation · <a href="https://www.thefiequation.com/">thefiequation.com</a> · For educational use only. Not financial advice.
+  </footer>
+</div>
+
+<script>
+  const ids = ['gross','employer','match','ira','brokerage','hsa'];
+  const el = {};
+  ids.forEach(i => el[i] = document.getElementById(i));
+  const totalPct = document.getElementById('totalPct');
+  const totalAmt = document.getElementById('totalAmt');
+  const employerNote = document.getElementById('employerNote');
+  const nextLink = document.getElementById('nextLink');
+
+  function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function num(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
+
+  function formatField(input){
+    const raw = input.value.replace(/[^0-9]/g,'');
+    if (raw === ''){ input.value = ''; return; }
+    input.value = parseInt(raw,10).toLocaleString('en-US');
+  }
+
+  function compute(){
+    const gross = num(el.gross.value);
+    const employer = num(el.employer.value);
+    const match = num(el.match.value);
+    const ira = num(el.ira.value);
+    const brokerage = num(el.brokerage.value);
+    const hsa = num(el.hsa.value);
+
+    const base = gross;                                  // gross income is the base
+    const personal = employer + ira + brokerage + hsa;   // what you set aside yourself
+    const total = personal + match;                      // including employer money
+
+    if (base <= 0) {
+      totalPct.textContent = '\u2014';
+      totalAmt.textContent = '';
+      employerNote.classList.add('hidden');
+      return;
+    }
+
+    const totalRate = Math.round(total/base*100);
+    const employerRate = Math.round(match/base*100);
+    const personalRate = Math.round(personal/base*100);
+
+    totalPct.textContent = totalRate + '%';
+    totalAmt.textContent = fmt(total) + ' saved each year';
+
+    if (match > 0) {
+      employerNote.classList.remove('hidden');
+      employerNote.textContent = 'About ' + employerRate + '% is coming from your employer';
+    } else {
+      employerNote.classList.add('hidden');
+    }
+
+    nextLink.href = 'fi-timeline-calculator.html?gross=' + Math.round(gross) + '&rate=' + personalRate;
+  }
+
+  ids.forEach(i => el[i].addEventListener('input', () => { formatField(el[i]); compute(); }));
+  compute();
+</script>
+
+
+</body></html>
