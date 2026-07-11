@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Age-Based Allocation Calculator · The FI Equation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#fff; --card:#fff; --bg2:#f8f7f4; --bg3:#f1efe8;
+    --text:#1a1a1a; --text2:#5f5e5a; --text3:#888780;
+    --border:rgba(0,0,0,0.10); --border2:rgba(0,0,0,0.16);
+    --accent:#0f6e56; --accent-soft:#e1f5ee; --track:#e8e6df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1c1c1a; --card:#242422; --bg2:#242422; --bg3:#2c2c2a;
+      --text:#e8e6e0; --text2:#b4b2a9; --text3:#888780;
+      --border:rgba(255,255,255,0.10); --border2:rgba(255,255,255,0.18);
+      --accent:#5dcaa5; --accent-soft:#04342c; --track:#34332f;
+    }
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.55; padding:1.5rem 1rem 2.5rem; }
+  .wrap { max-width:520px; margin:0 auto; }
+
+  header { margin-bottom:1rem; }
+  h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
+  header p { font-size:13px; color:var(--text2); }
+
+  .scope-note { font-size:12px; color:var(--text2); line-height:1.55; margin-bottom:1.5rem;
+    padding:0.8rem 1rem; background:var(--bg2); border:0.5px solid var(--border);
+    border-left:2px solid var(--accent); border-radius:10px; }
+  .scope-note a { color:var(--accent); text-decoration:none; }
+  .scope-note a:hover { text-decoration:underline; }
+
+  .card { background:var(--card); border:0.5px solid var(--border); border-radius:14px; padding:1.25rem 1.25rem 1.5rem; }
+
+  .field { margin-bottom:1.1rem; }
+  .field:last-child { margin-bottom:0; }
+  .field-label { font-size:13px; font-weight:500; color:var(--text); display:block; margin-bottom:5px; }
+  .field-hint { font-size:11px; color:var(--text3); margin-top:5px; line-height:1.5; }
+
+  .control { margin-bottom:1.4rem; }
+  .control-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .control-label { font-size:13px; font-weight:500; color:var(--text); }
+  .control-value { font-size:15px; font-weight:600; color:var(--accent); }
+
+  .input-money { width:100%; font-size:16px; font-family:inherit; color:var(--text);
+    background:var(--bg2); border:0.5px solid var(--border2); border-radius:8px; padding:10px 12px; outline:none; }
+  .input-money:focus { border-color:var(--accent); }
+  .money-wrap { position:relative; }
+  .money-wrap .input-money { padding-left:26px; padding-right:42px; }
+  .money-prefix { position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    font-size:16px; color:var(--text3); pointer-events:none; }
+  .money-suffix { position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:12px; color:var(--text3); pointer-events:none; }
+
+  input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:5px;
+    border-radius:5px; background:var(--track); outline:none; cursor:pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:20px; height:20px;
+    border-radius:50%; background:var(--accent); cursor:pointer; border:2px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,0.25); }
+  input[type="range"]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:var(--accent);
+    cursor:pointer; border:2px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,0.25); }
+
+  .section-label { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--text3); margin-bottom:0.9rem; }
+  .divider { height:0.5px; background:var(--border); margin:1.25rem 0; }
+
+  .toggle { display:flex; gap:4px; background:var(--bg3); border-radius:9px; padding:3px; }
+  .toggle button { flex:1; font-family:inherit; font-size:12px; font-weight:500; color:var(--text2);
+    background:transparent; border:none; cursor:pointer; padding:8px 8px; border-radius:7px; transition:background 0.12s, color 0.12s; }
+  .toggle button.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+
+  .floor-wrap { position:relative; max-width:140px; }
+  .floor-input { width:100%; font-size:15px; font-family:inherit; color:var(--text);
+    background:var(--bg2); border:0.5px solid var(--border2); border-radius:8px; padding:9px 30px 9px 12px; outline:none; }
+  .floor-input:focus { border-color:var(--accent); }
+  .floor-suffix { position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:14px; color:var(--text3); pointer-events:none; }
+
+  .formula { margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg3); border-radius:10px;
+    font-size:12.5px; color:var(--text2); text-align:center; line-height:1.5; }
+  .formula strong { color:var(--text); font-weight:600; }
+
+  .results { margin-top:0.9rem; display:flex; gap:0.75rem; }
+  .result-box { flex:1; padding:1.1rem 1rem; background:var(--accent-soft); border-radius:12px; text-align:center; }
+  .result-box.safe { background:var(--bg3); }
+  .result-label { font-size:11px; color:var(--text2); margin-bottom:5px; line-height:1.3; }
+  .result-pct { font-size:30px; font-weight:700; color:var(--text); line-height:1.05; }
+  .result-amt { font-size:11px; color:var(--text3); margin-top:5px; min-height:14px; }
+
+  .caution { font-size:11.5px; color:var(--text2); line-height:1.5; margin-top:0.9rem;
+    padding:0.75rem 0.9rem; background:var(--bg2); border:0.5px solid var(--border2); border-radius:10px; display:none; }
+  .caution.show { display:block; }
+
+  .assumptions { margin-top:1.25rem; font-size:11px; color:var(--text3); line-height:1.6; }
+  .assumptions strong { color:var(--text2); font-weight:500; }
+
+  .next-link { display:flex; align-items:center; justify-content:space-between; gap:0.5rem;
+    margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg2); border:0.5px solid var(--border2);
+    border-radius:10px; text-decoration:none; color:var(--accent); font-size:13px; font-weight:600; transition:border-color 0.12s; }
+  .next-link:hover { border-color:var(--accent); }
+  .next-arrow { font-size:16px; }
+
+  footer { margin-top:1.5rem; padding-top:1rem; border-top:0.5px solid var(--border);
+    font-size:11px; color:var(--text3); text-align:center; }
+  footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Age-Based Allocation Calculator</h1>
+    <p>A common rule of thumb sets your growth share as a number minus your age, so the mix grows more conservative as you get older. It's the idea behind target-date funds, sometimes called a glide path.</p>
+  </header>
+
+  <div class="scope-note">
+    This tool illustrates the share of a portfolio you'd hold in stable assets (e.g., cash, a high-yield savings account, short-term bonds) versus growth assets held for the long run (most commonly a broad stock index fund), based on a common age rule. It doesn't judge whether your portfolio is large enough to last. For that, start with your <a href="https://thefiequation.github.io/fi-tools/fi-number-calculator.html">FI number</a>.
+  </div>
+
+  <div class="card">
+    <div class="section-label">Your numbers</div>
+
+    <div class="field">
+      <label class="field-label" for="portfolio">Portfolio value</label>
+      <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="portfolio" value="2,000,000" inputmode="numeric"><span class="money-suffix">total</span></div>
+      <div class="field-hint">The invested balance you're allocating. Optional. Leave it blank to see the split as percentages only.</div>
+    </div>
+
+    <div class="control">
+      <div class="control-head">
+        <span class="control-label">Your age today</span>
+        <span class="control-value" id="ageVal">40</span>
+      </div>
+      <input type="range" id="age" min="1" max="100" step="1" value="40">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Which rule</label>
+      <div class="toggle" id="ruleToggle">
+        <button type="button" data-r="100">100 − age</button>
+        <button type="button" data-r="110" class="active">110 − age</button>
+        <button type="button" data-r="120">120 − age</button>
+      </div>
+      <div class="field-hint">All three are in common use. A higher number holds more in growth assets at every age, which is more aggressive. The spread between them is the point: the rule is a choice, not a fixed law.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="floor">Growth floor</label>
+      <div class="floor-wrap"><input class="floor-input" type="text" id="floor" inputmode="numeric" value="25" placeholder="None"><span class="floor-suffix">%</span></div>
+      <div class="field-hint">Optional. A minimum growth share the mix won't drop below, no matter your age. Some people set one so the portfolio keeps some growth in later years. Leave it blank for no floor.</div>
+    </div>
+
+    <div class="formula" id="formula"></div>
+
+    <div class="results">
+      <div class="result-box safe">
+        <div class="result-label">Stable</div>
+        <div class="result-pct" id="safePct">30%</div>
+        <div class="result-amt" id="safeAmt">$600,000</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">Growth</div>
+        <div class="result-pct" id="eqPct">70%</div>
+        <div class="result-amt" id="eqAmt">$1,400,000</div>
+      </div>
+    </div>
+
+    <div class="caution" id="caution"></div>
+
+    <div class="assumptions">
+      <strong>How this works:</strong> Your equity share is the rule's number minus your age, so 110 minus age 40 is 70 percent in growth assets and the rest stable. The share is held to a range of 0 to 100 percent, and an optional floor keeps it from falling below a level you choose. Stable here is the non-growth side of the mix: cash and cash-like holdings such as a high-yield savings account or money market, along with higher-quality bonds. The cash-like part you can pull from at par; bonds carry less risk than stocks, though their value can still move. Growth means assets you hold for the long run, most commonly a broad stock index fund. This method sets the mix by age alone. It doesn't look at when you'll actually spend the money, which is what the bucket approach does instead. Neither is the correct answer; they answer the question in different ways. This is a snapshot of one common rule, not a projection or a recommendation, and it doesn't account for taxes, account location, other income, or which specific holdings you use.
+    </div>
+
+    <a class="next-link" id="compareLink" href="https://thefiequation.github.io/fi-tools/compare-allocations.html">
+      <span class="next-text">See both side by side, with your numbers carried over</span>
+      <span class="next-arrow">→</span>
+    </a>
+
+    <footer>
+      The FI Equation · <a href="https://www.thefiequation.com/">thefiequation.com</a> · For educational use only. Not financial advice.
+    </footer>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function num(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
+  function formatField(input){
+    const raw = input.value.replace(/[^0-9]/g,'');
+    input.value = (raw === '') ? '' : parseInt(raw,10).toLocaleString('en-US');
+  }
+
+  let rule = 110;
+
+  $('ruleToggle').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    rule = parseInt(b.dataset.r);
+    $('ruleToggle').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    compute();
+  }));
+
+  function compute(){
+    const age = parseInt($('age').value);
+    $('ageVal').textContent = age;
+
+    const portfolioRaw = $('portfolio').value.trim();
+    const hasPortfolio = portfolioRaw !== '' && num(portfolioRaw) > 0;
+    const portfolio = num(portfolioRaw);
+
+    const floorRaw = $('floor').value.trim();
+    const hasFloor = floorRaw !== '';
+    let floor = hasFloor ? Math.max(0, Math.min(100, parseInt(floorRaw) || 0)) : null;
+
+    let raw = rule - age;
+    let eq = Math.max(0, Math.min(100, raw));
+    let floored = false;
+    if (hasFloor && eq < floor){ eq = floor; floored = true; }
+    const safe = 100 - eq;
+
+    // formula line
+    let f = '<strong>' + rule + ' \u2212 ' + age + '</strong> = ' + Math.max(0, Math.min(100, raw)) + '% in growth assets';
+    if (floored) f += '<br>Raised to your <strong>' + floor + '% floor</strong>';
+    $('formula').innerHTML = f;
+
+    $('safePct').textContent = safe + '%';
+    $('eqPct').textContent = eq + '%';
+
+    if (hasPortfolio){
+      $('safeAmt').textContent = fmt(portfolio * safe / 100);
+      $('eqAmt').textContent = fmt(portfolio * eq / 100);
+    } else {
+      $('safeAmt').textContent = '';
+      $('eqAmt').textContent = '';
+    }
+
+    const caution = $('caution');
+    if (raw > 100){
+      caution.classList.add('show');
+      caution.textContent = 'At this age the rule gives more than 100% in growth assets, so it\u2019s held at 100%. The rule stops distinguishing between younger ages once the number exceeds 100.';
+    } else if (raw < 0){
+      caution.classList.add('show');
+      caution.textContent = 'At this age the rule gives a negative growth share, so it\u2019s held at 0%. A floor would keep some growth in the mix if you want that.';
+    } else {
+      caution.classList.remove('show');
+      caution.textContent = '';
+    }
+  }
+
+  $('portfolio').addEventListener('input', () => { formatField($('portfolio')); compute(); });
+  $('age').addEventListener('input', compute);
+  $('floor').addEventListener('input', () => {
+    $('floor').value = $('floor').value.replace(/[^0-9]/g,'');
+    compute();
+  });
+
+  document.getElementById('compareLink').addEventListener('click', function(e){
+    e.preventDefault();
+    const q = new URLSearchParams();
+    q.set('p', $('portfolio').value.replace(/[^0-9]/g,''));
+    q.set('age', parseInt($('age').value));
+    q.set('rule', rule);
+    q.set('floor', $('floor').value.replace(/[^0-9]/g,''));
+    window.location.href = 'https://thefiequation.github.io/fi-tools/compare-allocations.html?' + q.toString();
+  });
+
+  /* prefill from a cross-link, e.g. ?portfolio=1000000&age=45&rule=110 */
+  (function prefill(){
+    const q = new URLSearchParams(window.location.search);
+    const p = parseFloat(q.get('portfolio'));
+    const a = parseFloat(q.get('age'));
+    const r = parseInt(q.get('rule'));
+    if (isFinite(p) && p >= 0) $('portfolio').value = Math.round(p).toLocaleString('en-US');
+    if (isFinite(a) && a >= 1 && a <= 100) $('age').value = a;
+    if ([100,110,120].includes(r)){
+      rule = r;
+      $('ruleToggle').querySelectorAll('button').forEach(x => x.classList.toggle('active', parseInt(x.dataset.r) === r));
+    }
+  })();
+
+  compute();
+</script>
+</body></html>
