@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Allocation Methods · The FI Equation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#fff; --card:#fff; --bg2:#f8f7f4; --bg3:#f1efe8;
+    --text:#1a1a1a; --text2:#5f5e5a; --text3:#888780;
+    --border:rgba(0,0,0,0.10); --border2:rgba(0,0,0,0.16);
+    --accent:#0f6e56; --accent-soft:#e1f5ee; --track:#e8e6df;
+    --safe:#5f5e5a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1c1c1a; --card:#242422; --bg2:#242422; --bg3:#2c2c2a;
+      --text:#e8e6e0; --text2:#b4b2a9; --text3:#888780;
+      --border:rgba(255,255,255,0.10); --border2:rgba(255,255,255,0.18);
+      --accent:#5dcaa5; --accent-soft:#04342c; --track:#34332f;
+      --safe:#b4b2a9;
+    }
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.55; padding:1.5rem 1rem 2.5rem; }
+
+  .page { max-width:1120px; margin:0 auto; }
+  .page-head { text-align:center; margin-bottom:1.25rem; }
+  .page-title { font-size:24px; font-weight:700; margin-bottom:6px; }
+  .page-sub { font-size:14px; color:var(--text2); max-width:640px; margin:0 auto; line-height:1.55; }
+
+  .compare-summary { background:var(--accent-soft); border:0.5px solid var(--border); border-radius:14px;
+    padding:1.1rem 1.25rem; margin-bottom:1.5rem; }
+  .cmp-row { display:flex; align-items:center; justify-content:center; gap:1.5rem; }
+  .cmp-cell { text-align:center; min-width:110px; }
+  .cmp-tag { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--text3); margin-bottom:3px; }
+  .cmp-pct { font-size:22px; font-weight:700; color:var(--text); line-height:1.1; }
+  .cmp-sub { font-size:12px; color:var(--text2); margin-top:2px; }
+  .cmp-vs { font-size:13px; font-weight:600; color:var(--text3); }
+  .cmp-gap { margin-top:0.9rem; padding-top:0.9rem; border-top:0.5px solid var(--border);
+    font-size:12.5px; color:var(--text2); line-height:1.55; text-align:center; }
+  .cmp-gap strong { color:var(--text); font-weight:600; }
+
+  .compare-grid { display:flex; gap:1.5rem; align-items:flex-start; justify-content:center; }
+  .col { flex:1 1 0; min-width:0; max-width:520px; }
+  @media (max-width: 900px){
+    .compare-grid { flex-direction:column; align-items:center; }
+    .col { max-width:520px; width:100%; }
+  }
+
+  header { margin-bottom:1rem; }
+  h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
+  header p { font-size:13px; color:var(--text2); }
+
+  .scope-note { font-size:12px; color:var(--text2); line-height:1.55; margin-bottom:1.5rem;
+    padding:0.8rem 1rem; background:var(--bg2); border:0.5px solid var(--border);
+    border-left:2px solid var(--accent); border-radius:10px; }
+  .scope-note a { color:var(--accent); text-decoration:none; }
+  .scope-note a:hover { text-decoration:underline; }
+
+  .card { background:var(--card); border:0.5px solid var(--border); border-radius:14px; padding:1.25rem 1.25rem 1.5rem; }
+
+  .field { margin-bottom:1.1rem; }
+  .field:last-child { margin-bottom:0; }
+  .field-label { font-size:13px; font-weight:500; color:var(--text); display:block; margin-bottom:5px; }
+  .field-hint { font-size:11px; color:var(--text3); margin-top:5px; line-height:1.5; }
+
+  .input-money { width:100%; font-size:16px; font-family:inherit; color:var(--text);
+    background:var(--bg2); border:0.5px solid var(--border2); border-radius:8px; padding:10px 12px; outline:none; }
+  .input-money:focus { border-color:var(--accent); }
+  .money-wrap { position:relative; }
+  .money-wrap .input-money { padding-left:26px; padding-right:42px; }
+  .money-prefix { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text3); pointer-events:none; }
+  .money-suffix { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--text3); pointer-events:none; }
+
+  .section-label { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--text3); margin-bottom:0.9rem; }
+  .divider { height:0.5px; background:var(--border); margin:1.25rem 0; }
+  .intro-hint { font-size:11px; color:var(--text3); line-height:1.5; margin:-0.3rem 0 1rem; }
+
+  .control { margin-bottom:1.4rem; }
+  .control-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .control-label { font-size:13px; font-weight:500; color:var(--text); }
+  .control-value { font-size:15px; font-weight:600; color:var(--accent); }
+
+  input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:5px; background:var(--track); outline:none; cursor:pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%; background:var(--accent); cursor:pointer; border:2px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,0.25); }
+  input[type="range"]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:var(--accent); cursor:pointer; border:2px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,0.25); }
+
+  .toggle { display:flex; gap:4px; background:var(--bg3); border-radius:9px; padding:3px; }
+  .toggle button { flex:1; font-family:inherit; font-size:12px; font-weight:500; color:var(--text2); background:transparent; border:none; cursor:pointer; padding:8px 8px; border-radius:7px; transition:background 0.12s, color 0.12s; }
+  .toggle button.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+
+  .floor-wrap { position:relative; max-width:140px; }
+  .floor-input { width:100%; font-size:15px; font-family:inherit; color:var(--text); background:var(--bg2); border:0.5px solid var(--border2); border-radius:8px; padding:9px 30px 9px 12px; outline:none; }
+  .floor-input:focus { border-color:var(--accent); }
+  .floor-suffix { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--text3); pointer-events:none; }
+
+  .formula { margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg3); border-radius:10px; font-size:12.5px; color:var(--text2); text-align:center; line-height:1.5; }
+  .formula strong { color:var(--text); font-weight:600; }
+
+  .adj { background:var(--bg2); border:0.5px solid var(--border); border-radius:10px; padding:0.8rem 0.85rem; margin-bottom:0.7rem; }
+  .adj-head { display:flex; gap:8px; align-items:center; margin-bottom:0.6rem; }
+  .adj-desc { flex:1; font-size:13px; font-family:inherit; color:var(--text); background:var(--card); border:0.5px solid var(--border2); border-radius:7px; padding:7px 9px; outline:none; }
+  .adj-desc:focus { border-color:var(--accent); }
+  .adj-remove { flex:0 0 auto; width:26px; height:26px; border-radius:7px; border:0.5px solid var(--border2); background:var(--card); color:var(--text3); font-size:15px; line-height:1; cursor:pointer; }
+  .adj-remove:hover { border-color:var(--accent); color:var(--accent); }
+  .mini-toggle { display:inline-flex; gap:3px; background:var(--bg3); border-radius:8px; padding:3px; }
+  .mini-toggle button { font-family:inherit; font-size:11.5px; font-weight:500; color:var(--text2); background:transparent; border:none; cursor:pointer; padding:5px 11px; border-radius:6px; }
+  .mini-toggle button.active { background:var(--card); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,0.12); }
+  .adj-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .sub-money-wrap { position:relative; flex:1 1 130px; min-width:120px; }
+  .sub-money-wrap .sub-money { padding-left:22px; }
+  .sub-money { width:100%; font-size:14px; font-family:inherit; color:var(--text); background:var(--card); border:0.5px solid var(--border2); border-radius:7px; padding:8px 10px; outline:none; }
+  .sub-money:focus { border-color:var(--accent); }
+  .sub-money-prefix { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--text3); pointer-events:none; }
+  .yr-label { font-size:12px; color:var(--text2); }
+  .yr-input { width:52px; font-size:14px; font-family:inherit; color:var(--text); text-align:center; background:var(--card); border:0.5px solid var(--border2); border-radius:7px; padding:8px 4px; outline:none; }
+  .yr-input:focus { border-color:var(--accent); }
+  .adj-note { font-size:10.5px; color:var(--text3); margin-top:6px; line-height:1.4; }
+  .add-btn { font-family:inherit; font-size:12px; font-weight:600; color:var(--accent); background:none; border:0.5px dashed var(--border2); border-radius:8px; cursor:pointer; padding:8px 12px; width:100%; text-align:left; transition:border-color 0.12s; margin-bottom:0.5rem; }
+  .add-btn:hover { border-color:var(--accent); }
+  .add-btn:last-child { margin-bottom:0; }
+
+  .interim { margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg3); border-radius:10px; display:flex; justify-content:space-between; align-items:center; }
+  .interim-label { font-size:12px; color:var(--text2); }
+  .interim-value { font-size:15px; font-weight:600; color:var(--text); }
+
+  .results { margin-top:0.9rem; display:flex; gap:0.75rem; }
+  .result-box { flex:1; padding:1.1rem 1rem; background:var(--accent-soft); border-radius:12px; text-align:center; }
+  .result-box.safe { background:var(--bg3); }
+  .result-label { font-size:11px; color:var(--text2); margin-bottom:5px; line-height:1.3; }
+  .result-pct { font-size:30px; font-weight:700; color:var(--text); line-height:1.05; }
+  .result-amt { font-size:11px; color:var(--text3); margin-top:5px; min-height:14px; }
+
+  .caution { font-size:11.5px; color:var(--text2); line-height:1.5; margin-top:0.9rem; padding:0.75rem 0.9rem; background:var(--bg2); border:0.5px solid var(--border2); border-radius:10px; display:none; }
+  .caution.show { display:block; }
+  .caution strong { color:var(--text); font-weight:600; }
+
+  .buckets { margin-top:1.25rem; }
+  .bucket { display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:0.7rem 0; border-top:0.5px solid var(--border); }
+  .bucket:first-child { border-top:none; }
+  .bucket-name { font-size:13px; font-weight:600; color:var(--text); }
+  .bucket-range { font-size:11px; color:var(--text3); margin-top:1px; }
+  .bucket-hold { font-size:11px; color:var(--text3); margin-top:1px; }
+  .bucket-amt { font-size:14px; font-weight:600; color:var(--text); text-align:right; white-space:nowrap; }
+  .bucket-amt .split { display:block; font-size:11px; font-weight:400; color:var(--text3); margin-top:1px; }
+
+  .expand-btn { font-family:inherit; font-size:11.5px; color:var(--accent); background:none; border:none; cursor:pointer; padding:4px 0; margin-top:0.9rem; display:inline-flex; align-items:center; gap:4px; }
+  .expand-btn .chev { transition:transform 0.15s; display:inline-block; }
+  .expand-btn.open .chev { transform:rotate(90deg); }
+  .yeartable { margin-top:0.6rem; display:none; overflow:hidden; border:0.5px solid var(--border); border-radius:10px; }
+  .yeartable.open { display:block; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { padding:7px 8px; text-align:right; border-bottom:0.5px solid var(--border); }
+  th:first-child, td:first-child { text-align:left; }
+  thead th { font-size:10.5px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.03em; background:var(--bg2); }
+  tbody tr:last-child td { border-bottom:none; }
+  td.eqcol { color:var(--accent); }
+
+  .assumptions { margin-top:1.25rem; font-size:11px; color:var(--text3); line-height:1.6; }
+  .assumptions strong { color:var(--text2); font-weight:500; }
+
+  .page-footer { margin-top:1.75rem; padding-top:1rem; border-top:0.5px solid var(--border); font-size:11px; color:var(--text3); text-align:center; }
+  .page-footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-head">
+    <div class="page-title">Compare allocation methods</div>
+    <p class="page-sub">Two ways to answer the same question. The bucket method sets your mix by when you'll spend the money. The age rule sets it by your age. Neither is the right answer, and seeing both at once is the point. Your portfolio is shared across both, so change it on either side.</p>
+  </div>
+
+  <div class="compare-summary">
+    <div class="cmp-row">
+      <div class="cmp-cell">
+        <div class="cmp-tag">Bucket</div>
+        <div class="cmp-pct" id="sumBucket">81% growth</div>
+        <div class="cmp-sub" id="sumBucketSafe">19% stable</div>
+      </div>
+      <div class="cmp-vs">vs</div>
+      <div class="cmp-cell">
+        <div class="cmp-tag">Age-based</div>
+        <div class="cmp-pct" id="sumAge">70% growth</div>
+        <div class="cmp-sub" id="sumAgeSafe">30% stable</div>
+      </div>
+    </div>
+    <div class="cmp-gap" id="sumGap"></div>
+  </div>
+
+  <div class="compare-grid">
+
+    <!-- ================= BUCKET COLUMN ================= -->
+    <div class="col">
+      <header>
+        <h1>Bucket Allocation</h1>
+        <p>Allocation set by when you'll need the money, not by your age. Money you'll spend soon stays out of the market. Money you won't touch for years can grow.</p>
+      </header>
+
+      <div class="scope-note">
+        This side shows the share of a portfolio you'd hold in stable assets (e.g., cash, a high-yield savings account, money market) versus growth assets held for the long run (most commonly a broad stock index fund), based on when each dollar is needed. It doesn't judge whether your portfolio is large enough to last. For that, start with your <a href="https://thefiequation.github.io/fi-tools/fi-number-calculator.html">FI number</a>.
+      </div>
+
+      <div class="card">
+        <div class="section-label">Your numbers</div>
+
+        <div class="field">
+          <label class="field-label" for="bk_portfolio">Portfolio value</label>
+          <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="bk_portfolio" value="2,000,000" inputmode="numeric"><span class="money-suffix">total</span></div>
+          <div class="field-hint">The invested balance you're allocating. Shared with the age-based side, so changing it here changes it there too.</div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="bk_base">Base annual spending</label>
+          <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="bk_base" value="80,000" inputmode="numeric"><span class="money-suffix">/yr</span></div>
+          <div class="field-hint">What you expect to draw from the portfolio in a typical year, in today's dollars. Adjustments for specific years come next.</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-label">Adjustments</div>
+        <div class="intro-hint">Optional. These reshape the need in specific years inside your ten-year reserve. A cost adds to a year; an income source that starts later subtracts from it. Anything scheduled past year 10 sits in the long-term equity bucket already, so it won't change the split.</div>
+
+        <div id="bk_oneTimeList"></div>
+        <button type="button" class="add-btn" id="bk_addOneTime">+ One-time expense or income (a single year)</button>
+
+        <div style="height:0.6rem"></div>
+
+        <div id="bk_recurringList"></div>
+        <button type="button" class="add-btn" id="bk_addRecurring">+ Recurring bridge or gap (a range of years)</button>
+
+        <div class="interim">
+          <span class="interim-label">Your ten-year reserve</span>
+          <span class="interim-value" id="bk_reserveVal">$800,000</span>
+        </div>
+
+        <div class="results">
+          <div class="result-box safe">
+            <div class="result-label">Stable</div>
+            <div class="result-pct" id="bk_safePct">19%</div>
+            <div class="result-amt" id="bk_safeAmt">$384,000</div>
+          </div>
+          <div class="result-box">
+            <div class="result-label">Growth</div>
+            <div class="result-pct" id="bk_eqPct">81%</div>
+            <div class="result-amt" id="bk_eqAmt">$1,616,000</div>
+          </div>
+        </div>
+
+        <div class="caution" id="bk_caution"></div>
+
+        <div class="buckets" id="bk_buckets"></div>
+
+        <button type="button" class="expand-btn" id="bk_yearExpand"><span class="chev">▸</span> Show the year-by-year reserve</button>
+        <div class="yeartable" id="bk_yeartable"></div>
+
+        <div class="assumptions">
+          <strong>How this works:</strong> The next ten years of spending are held in reserve, split by when you'll need each year's money. The first two years stay entirely in stable assets. From year three on, each year holds ten percent in growth assets for every year until you need it, so thirty percent at three years out, rising to one hundred percent at ten years. Everything beyond your ten-year reserve is the long-term bucket, held fully in growth assets. Stable means holdings you can draw on without worrying about the market: cash, a high-yield savings account, money market, or similar cash-like assets you can pull from at par. The first two years stay in these. For the stable portion of years three through ten, high-quality bonds matched to when you'll need the money are a reasonable choice too, since that money has a little more time before it's spent. Growth means assets you hold for the long run, most commonly a broad stock index fund. The role can be filled other ways; what matters here is that this money isn't needed for years and is expected to move with the market in the meantime. Everything is in today's dollars. This is a snapshot of a target allocation, not a projection. In practice you refill the near-term buckets from the long-term one over time as markets allow. It doesn't account for taxes, account location, sequence of returns, or which specific holdings you use.
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= AGE COLUMN ================= -->
+    <div class="col">
+      <header>
+        <h1>Age-Based Allocation</h1>
+        <p>A common rule of thumb sets your growth share as a number minus your age, so the mix grows more conservative as you get older. It's the idea behind target-date funds, sometimes called a glide path.</p>
+      </header>
+
+      <div class="scope-note">
+        This side shows the share of a portfolio you'd hold in stable assets (e.g., cash, a high-yield savings account, short-term bonds) versus growth assets held for the long run (most commonly a broad stock index fund), based on a common age rule. It doesn't judge whether your portfolio is large enough to last. For that, start with your <a href="https://thefiequation.github.io/fi-tools/fi-number-calculator.html">FI number</a>.
+      </div>
+
+      <div class="card">
+        <div class="section-label">Your numbers</div>
+
+        <div class="field">
+          <label class="field-label" for="ag_portfolio">Portfolio value</label>
+          <div class="money-wrap"><span class="money-prefix">$</span><input class="input-money" type="text" id="ag_portfolio" value="2,000,000" inputmode="numeric"><span class="money-suffix">total</span></div>
+          <div class="field-hint">The invested balance you're allocating. Shared with the bucket side, so changing it here changes it there too.</div>
+        </div>
+
+        <div class="control">
+          <div class="control-head">
+            <span class="control-label">Your age today</span>
+            <span class="control-value" id="ag_ageVal">40</span>
+          </div>
+          <input type="range" id="ag_age" min="1" max="100" step="1" value="40">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Which rule</label>
+          <div class="toggle" id="ag_ruleToggle">
+            <button type="button" data-r="100">100 − age</button>
+            <button type="button" data-r="110" class="active">110 − age</button>
+            <button type="button" data-r="120">120 − age</button>
+          </div>
+          <div class="field-hint">All three are in common use. A higher number holds more in growth assets at every age, which is more aggressive. The spread between them is the point: the rule is a choice, not a fixed law.</div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="ag_floor">Growth floor</label>
+          <div class="floor-wrap"><input class="floor-input" type="text" id="ag_floor" inputmode="numeric" value="25" placeholder="None"><span class="floor-suffix">%</span></div>
+          <div class="field-hint">Optional. A minimum growth share the mix won't drop below, no matter your age. Some people set one so the portfolio keeps some growth in later years. Leave it blank for no floor.</div>
+        </div>
+
+        <div class="formula" id="ag_formula"></div>
+
+        <div class="results">
+          <div class="result-box safe">
+            <div class="result-label">Stable</div>
+            <div class="result-pct" id="ag_safePct">30%</div>
+            <div class="result-amt" id="ag_safeAmt">$600,000</div>
+          </div>
+          <div class="result-box">
+            <div class="result-label">Growth</div>
+            <div class="result-pct" id="ag_eqPct">70%</div>
+            <div class="result-amt" id="ag_eqAmt">$1,400,000</div>
+          </div>
+        </div>
+
+        <div class="caution" id="ag_caution"></div>
+
+        <div class="assumptions">
+          <strong>How this works:</strong> Your equity share is the rule's number minus your age, so 110 minus age 40 is 70 percent in growth assets and the rest stable. The share is held to a range of 0 to 100 percent, and an optional floor keeps it from falling below a level you choose. Stable here is the non-growth side of the mix: cash and cash-like holdings such as a high-yield savings account or money market, along with higher-quality bonds. The cash-like part you can pull from at par; bonds carry less risk than stocks, though their value can still move. Growth means assets you hold for the long run, most commonly a broad stock index fund. This method sets the mix by age alone. It doesn't look at when you'll actually spend the money, which is what the bucket approach does instead. Neither is the correct answer; they answer the question in different ways. This is a snapshot of one common rule, not a projection or a recommendation, and it doesn't account for taxes, account location, other income, or which specific holdings you use.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="page-footer">
+    The FI Equation · <a href="https://www.thefiequation.com/">thefiequation.com</a> · For educational use only. Not financial advice.
+  </div>
+</div>
+
+<script>
+/* ======================= BUCKET APP ======================= */
+const Bucket = (function(){
+  const $ = id => document.getElementById('bk_' + id);
+  function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function num(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
+  function formatField(input){
+    const raw = input.value.replace(/[^0-9]/g,'');
+    input.value = (raw === '') ? '' : parseInt(raw,10).toLocaleString('en-US');
+  }
+
+  const HORIZON = 10;
+  function equityFrac(y){ if (y <= 2) return 0; return Math.min(100, y * 10) / 100; }
+
+  let uid = 0;
+  const oneTimes = [];
+  const recurrings = [];
+  let notify = () => {};
+  let lastResult = null;
+
+  function addOneTime(pre){
+    const item = { id: ++uid, type:'cost', amount:0, year:1 };
+    const el = document.createElement('div');
+    el.className = 'adj';
+    el.innerHTML =
+      '<div class="adj-head"><input class="adj-desc" type="text" placeholder="Description, e.g. Replace car" />' +
+      '<button class="adj-remove" type="button" aria-label="Remove">\u00d7</button></div>' +
+      '<div class="adj-row"><div class="mini-toggle">' +
+      '<button type="button" data-t="cost" class="active">Cost</button>' +
+      '<button type="button" data-t="income">Income</button></div>' +
+      '<div class="sub-money-wrap"><span class="sub-money-prefix">$</span>' +
+      '<input class="sub-money" type="text" inputmode="numeric" placeholder="0" /></div>' +
+      '<span class="yr-label">in year</span>' +
+      '<input class="yr-input" type="text" inputmode="numeric" value="1" /></div>' +
+      '<div class="adj-note"></div>';
+    item.el = el;
+    const toggle = el.querySelector('.mini-toggle');
+    toggle.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      item.type = b.dataset.t;
+      toggle.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      compute();
+    }));
+    const money = el.querySelector('.sub-money');
+    money.addEventListener('input', () => { formatField(money); item.amount = num(money.value); compute(); });
+    const yr = el.querySelector('.yr-input');
+    yr.addEventListener('input', () => {
+      yr.value = yr.value.replace(/[^0-9]/g,'');
+      item.year = parseInt(yr.value) || 0;
+      noteFor(el, item.year); compute();
+    });
+    el.querySelector('.adj-remove').addEventListener('click', () => {
+      const i = oneTimes.indexOf(item); if (i > -1) oneTimes.splice(i, 1);
+      el.remove(); compute();
+    });
+    if (pre){
+      if (pre.type) item.type = pre.type;
+      toggle.querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.t === item.type));
+      if (pre.amount){ item.amount = pre.amount; money.value = pre.amount.toLocaleString('en-US'); }
+      if (pre.year){ item.year = pre.year; yr.value = pre.year; }
+      if (pre.desc) el.querySelector('.adj-desc').value = pre.desc;
+    }
+    oneTimes.push(item);
+    $('oneTimeList').appendChild(el);
+    noteFor(el, item.year);
+  }
+  function noteFor(el, year){
+    const note = el.querySelector('.adj-note');
+    note.textContent = (year > HORIZON) ? ("Year " + year + " is past your ten-year reserve, so it won't change the split.") : "";
+  }
+
+  function addRecurring(pre){
+    const item = { id: ++uid, type:'cost', amount:0, start:1, end:HORIZON };
+    const el = document.createElement('div');
+    el.className = 'adj';
+    el.innerHTML =
+      '<div class="adj-head"><input class="adj-desc" type="text" placeholder="Description, e.g. Health premiums until Medicare" />' +
+      '<button class="adj-remove" type="button" aria-label="Remove">\u00d7</button></div>' +
+      '<div class="adj-row"><div class="mini-toggle">' +
+      '<button type="button" data-t="cost" class="active">Cost</button>' +
+      '<button type="button" data-t="income">Income</button></div>' +
+      '<div class="sub-money-wrap"><span class="sub-money-prefix">$</span>' +
+      '<input class="sub-money" type="text" inputmode="numeric" placeholder="0" /></div>' +
+      '<span class="yr-label">/yr</span></div>' +
+      '<div class="adj-row" style="margin-top:8px"><span class="yr-label">from year</span>' +
+      '<input class="yr-input" data-k="start" type="text" inputmode="numeric" value="1" />' +
+      '<span class="yr-label">to year</span>' +
+      '<input class="yr-input" data-k="end" type="text" inputmode="numeric" value="' + HORIZON + '" /></div>' +
+      '<div class="adj-note"></div>';
+    item.el = el;
+    const toggle = el.querySelector('.mini-toggle');
+    toggle.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      item.type = b.dataset.t;
+      toggle.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      compute();
+    }));
+    const money = el.querySelector('.sub-money');
+    money.addEventListener('input', () => { formatField(money); item.amount = num(money.value); compute(); });
+    const startEl = el.querySelector('[data-k="start"]');
+    const endEl = el.querySelector('[data-k="end"]');
+    function yrChange(){
+      startEl.value = startEl.value.replace(/[^0-9]/g,'');
+      endEl.value = endEl.value.replace(/[^0-9]/g,'');
+      item.start = parseInt(startEl.value) || 0;
+      item.end = parseInt(endEl.value) || 0;
+      recurNote(el, item); compute();
+    }
+    startEl.addEventListener('input', yrChange);
+    endEl.addEventListener('input', yrChange);
+    el.querySelector('.adj-remove').addEventListener('click', () => {
+      const i = recurrings.indexOf(item); if (i > -1) recurrings.splice(i, 1);
+      el.remove(); compute();
+    });
+    if (pre){
+      if (pre.type) item.type = pre.type;
+      toggle.querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.t === item.type));
+      if (pre.amount){ item.amount = pre.amount; money.value = pre.amount.toLocaleString('en-US'); }
+      if (pre.start){ item.start = pre.start; startEl.value = pre.start; }
+      if (pre.end){ item.end = pre.end; endEl.value = pre.end; }
+      if (pre.desc) el.querySelector('.adj-desc').value = pre.desc;
+    }
+    recurrings.push(item);
+    $('recurringList').appendChild(el);
+    recurNote(el, item);
+  }
+  function recurNote(el, item){
+    const note = el.querySelector('.adj-note');
+    if (item.start > 0 && item.end > 0 && item.end < item.start) note.textContent = "The end year is before the start year, so this range is being skipped.";
+    else if (item.start > HORIZON) note.textContent = "This range starts past year 10, so it won't change the split.";
+    else note.textContent = "";
+  }
+
+  $('addOneTime').addEventListener('click', () => { addOneTime(); compute(); });
+  $('addRecurring').addEventListener('click', () => { addRecurring(); compute(); });
+
+  function compute(){
+    const portfolioRaw = $('portfolio').value.trim();
+    const hasPortfolio = portfolioRaw !== '' && num(portfolioRaw) > 0;
+    const portfolio = num(portfolioRaw);
+    const base = num($('base').value);
+
+    const net = [];
+    for (let y = 1; y <= HORIZON; y++){
+      let v = base;
+      oneTimes.forEach(o => { if (o.year === y) v += (o.type === 'income' ? -1 : 1) * o.amount; });
+      recurrings.forEach(r => { if (r.start <= r.end && y >= r.start && y <= r.end) v += (r.type === 'income' ? -1 : 1) * r.amount; });
+      net[y] = Math.max(0, v);
+    }
+
+    let reserveSafe = 0, reserveEq = 0, reserveTotal = 0, b2safe = 0, b2eq = 0;
+    for (let y = 1; y <= HORIZON; y++){
+      const e = equityFrac(y);
+      reserveEq += net[y] * e; reserveSafe += net[y] * (1 - e); reserveTotal += net[y];
+      if (y >= 3){ b2eq += net[y] * e; b2safe += net[y] * (1 - e); }
+    }
+    const bucket1 = net[1] + net[2];
+    const bucket2total = b2safe + b2eq;
+    $('reserveVal').textContent = fmt(reserveTotal);
+
+    let safePct, eqPct, safeDollars, eqDollars, bucket3 = 0, showDollars = false;
+    const caution = $('caution');
+    caution.classList.remove('show'); caution.innerHTML = '';
+
+    if (reserveTotal <= 0){
+      $('safePct').textContent = '\u2014'; $('eqPct').textContent = '\u2014';
+      $('safeAmt').textContent = ''; $('eqAmt').textContent = '';
+      caution.classList.add('show');
+      caution.innerHTML = 'Enter a base annual spending amount to see an allocation.';
+      renderBuckets({bucket1, b2safe, b2eq, bucket2total, bucket3:0, hasPortfolio, funded:true});
+      renderYearTable(net);
+      lastResult = { eqPct:null, safePct:null, hasPortfolio, portfolio };
+      notify();
+      return;
+    }
+
+    if (hasPortfolio){
+      showDollars = true;
+      if (portfolio >= reserveTotal){
+        bucket3 = portfolio - reserveTotal;
+        safeDollars = reserveSafe; eqDollars = reserveEq + bucket3;
+        safePct = safeDollars / portfolio * 100; eqPct = 100 - safePct;
+        renderBuckets({bucket1, b2safe, b2eq, bucket2total, bucket3, hasPortfolio, funded:true});
+      } else {
+        safePct = reserveSafe / reserveTotal * 100; eqPct = 100 - safePct;
+        safeDollars = portfolio * safePct / 100; eqDollars = portfolio * eqPct / 100;
+        caution.classList.add('show');
+        caution.innerHTML = '<strong>Your ten-year reserve is larger than the portfolio you entered.</strong> ' +
+          'Covering the next ten years would use all of it, leaving no long-term growth bucket. ' +
+          'The split below follows the reserve\u2019s own mix. The dollar figures show how your ' + fmt(portfolio) + ' would divide along those lines.';
+        renderBuckets({bucket1, b2safe, b2eq, bucket2total, bucket3:0, hasPortfolio, funded:false});
+      }
+    } else {
+      safePct = reserveSafe / reserveTotal * 100; eqPct = 100 - safePct;
+      renderBuckets({bucket1, b2safe, b2eq, bucket2total, bucket3:0, hasPortfolio:false, funded:true});
+      caution.classList.add('show');
+      caution.innerHTML = 'This split covers your ten-year reserve. Add a portfolio value to include the long-term bucket, which is fully in growth assets and raises your overall growth share above what\u2019s shown here.';
+    }
+
+    $('safePct').textContent = Math.round(safePct) + '%';
+    $('eqPct').textContent = Math.round(eqPct) + '%';
+    $('safeAmt').textContent = showDollars ? fmt(safeDollars) : '';
+    $('eqAmt').textContent = showDollars ? fmt(eqDollars) : '';
+
+    renderYearTable(net);
+    lastResult = { eqPct: Math.round(eqPct), safePct: Math.round(safePct), hasPortfolio, portfolio };
+    notify();
+  }
+
+  function renderBuckets(d){
+    const p = d.hasPortfolio;
+    const label = d.funded ? '' : ' <span style="color:var(--text3)">(reserve target)</span>';
+    let html = '';
+    html += '<div class="bucket"><div><div class="bucket-name">Bucket 1</div>' +
+      '<div class="bucket-range">Years 1\u20132 \u00b7 the near term</div>' +
+      '<div class="bucket-hold">All stable</div></div>' +
+      '<div class="bucket-amt">' + (p ? fmt(d.bucket1) + label : '100% stable') + '</div></div>';
+    let b2right;
+    if (p){ b2right = fmt(d.bucket2total) + label + '<span class="split">' + fmt(d.b2safe) + ' stable \u00b7 ' + fmt(d.b2eq) + ' growth</span>'; }
+    else { const pct = d.bucket2total > 0 ? Math.round(d.b2eq / d.bucket2total * 100) : 0; b2right = 'Blended<span class="split">' + pct + '% growth across the range</span>'; }
+    html += '<div class="bucket"><div><div class="bucket-name">Bucket 2</div>' +
+      '<div class="bucket-range">Years 3\u201310 \u00b7 the ramp</div>' +
+      '<div class="bucket-hold">Growth share rises 10% per year</div></div>' +
+      '<div class="bucket-amt">' + b2right + '</div></div>';
+    let b3right;
+    if (p && d.funded) b3right = fmt(d.bucket3);
+    else if (p && !d.funded) b3right = '<span style="color:var(--text3)">none at this level</span>';
+    else b3right = 'All growth';
+    html += '<div class="bucket"><div><div class="bucket-name">Bucket 3</div>' +
+      '<div class="bucket-range">Beyond year 10 \u00b7 the long term</div>' +
+      '<div class="bucket-hold">Everything past the reserve, all growth</div></div>' +
+      '<div class="bucket-amt">' + b3right + '</div></div>';
+    $('buckets').innerHTML = html;
+  }
+
+  function renderYearTable(net){
+    let rows = '';
+    for (let y = 1; y <= HORIZON; y++){
+      const e = equityFrac(y); const safe = net[y] * (1 - e); const eq = net[y] * e;
+      rows += '<tr><td>Year ' + y + '</td><td>' + fmt(net[y]) + '</td><td class="eqcol">' + Math.round(e * 100) + '%</td><td>' + fmt(safe) + '</td><td>' + fmt(eq) + '</td></tr>';
+    }
+    $('yeartable').innerHTML = '<table><thead><tr><th>When</th><th>Need</th><th>Growth %</th><th>Stable</th><th>Growth</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  $('yearExpand').addEventListener('click', () => {
+    const open = $('yeartable').classList.toggle('open');
+    $('yearExpand').classList.toggle('open', open);
+    $('yearExpand').querySelector('.chev').nextSibling.textContent = open ? ' Hide the year-by-year reserve' : ' Show the year-by-year reserve';
+  });
+
+  ['portfolio','base'].forEach(id => { $(id).addEventListener('input', () => { formatField($(id)); compute(); }); });
+
+  return {
+    compute,
+    portfolioEl: $('portfolio'),
+    setNotify(fn){ notify = fn; },
+    getResult(){ return lastResult; },
+    setPortfolioValue(v){
+      const raw = String(v).replace(/[^0-9]/g,'');
+      $('portfolio').value = raw === '' ? '' : parseInt(raw,10).toLocaleString('en-US');
+      compute();
+    },
+    prefill(st){
+      if (st.baseStr !== undefined){
+        const raw = String(st.baseStr).replace(/[^0-9]/g,'');
+        $('base').value = raw === '' ? '' : parseInt(raw,10).toLocaleString('en-US');
+      }
+      (st.oneTimes || []).forEach(o => addOneTime(o));
+      (st.recurrings || []).forEach(r => addRecurring(r));
+      compute();
+    },
+    readState(){
+      return {
+        portfolioStr: $('portfolio').value.replace(/[^0-9]/g,''),
+        baseStr: $('base').value.replace(/[^0-9]/g,''),
+        oneTimes: oneTimes.map(o => ({type:o.type, amount:o.amount, year:o.year})),
+        recurrings: recurrings.map(r => ({type:r.type, amount:r.amount, start:r.start, end:r.end}))
+      };
+    }
+  };
+})();
+
+/* ======================= AGE APP ======================= */
+const Age = (function(){
+  const $ = id => document.getElementById('ag_' + id);
+  function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function num(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
+  function formatField(input){
+    const raw = input.value.replace(/[^0-9]/g,'');
+    input.value = (raw === '') ? '' : parseInt(raw,10).toLocaleString('en-US');
+  }
+
+  let rule = 110;
+  let notify = () => {};
+  let lastResult = null;
+
+  function setRule(r){
+    rule = r;
+    $('ruleToggle').querySelectorAll('button').forEach(x => x.classList.toggle('active', parseInt(x.dataset.r) === r));
+  }
+
+  $('ruleToggle').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    setRule(parseInt(b.dataset.r)); compute();
+  }));
+
+  function compute(){
+    const age = parseInt($('age').value);
+    $('ageVal').textContent = age;
+
+    const portfolioRaw = $('portfolio').value.trim();
+    const hasPortfolio = portfolioRaw !== '' && num(portfolioRaw) > 0;
+    const portfolio = num(portfolioRaw);
+
+    const floorRaw = $('floor').value.trim();
+    const hasFloor = floorRaw !== '';
+    let floor = hasFloor ? Math.max(0, Math.min(100, parseInt(floorRaw) || 0)) : null;
+
+    let raw = rule - age;
+    let eq = Math.max(0, Math.min(100, raw));
+    let floored = false;
+    if (hasFloor && eq < floor){ eq = floor; floored = true; }
+    const safe = 100 - eq;
+
+    let f = '<strong>' + rule + ' \u2212 ' + age + '</strong> = ' + Math.max(0, Math.min(100, raw)) + '% in growth assets';
+    if (floored) f += '<br>Raised to your <strong>' + floor + '% floor</strong>';
+    $('formula').innerHTML = f;
+
+    $('safePct').textContent = safe + '%';
+    $('eqPct').textContent = eq + '%';
+    if (hasPortfolio){
+      $('safeAmt').textContent = fmt(portfolio * safe / 100);
+      $('eqAmt').textContent = fmt(portfolio * eq / 100);
+    } else {
+      $('safeAmt').textContent = ''; $('eqAmt').textContent = '';
+    }
+
+    const caution = $('caution');
+    if (raw > 100){
+      caution.classList.add('show');
+      caution.textContent = 'At this age the rule gives more than 100% in growth assets, so it\u2019s held at 100%. The rule stops distinguishing between younger ages once the number exceeds 100.';
+    } else if (raw < 0){
+      caution.classList.add('show');
+      caution.textContent = 'At this age the rule gives a negative growth share, so it\u2019s held at 0%. A floor would keep some growth in the mix if you want that.';
+    } else {
+      caution.classList.remove('show'); caution.textContent = '';
+    }
+
+    lastResult = { eqPct: eq, safePct: safe, hasPortfolio, portfolio };
+    notify();
+  }
+
+  $('portfolio').addEventListener('input', () => { formatField($('portfolio')); compute(); });
+  $('age').addEventListener('input', compute);
+  $('floor').addEventListener('input', () => { $('floor').value = $('floor').value.replace(/[^0-9]/g,''); compute(); });
+
+  return {
+    compute,
+    portfolioEl: $('portfolio'),
+    setNotify(fn){ notify = fn; },
+    getResult(){ return lastResult; },
+    setPortfolioValue(v){
+      const raw = String(v).replace(/[^0-9]/g,'');
+      $('portfolio').value = raw === '' ? '' : parseInt(raw,10).toLocaleString('en-US');
+      compute();
+    },
+    prefill(st){
+      if (st.age !== undefined && st.age !== ''){ $('age').value = Math.max(1, Math.min(100, parseInt(st.age) || 40)); }
+      if (st.rule !== undefined && [100,110,120].includes(parseInt(st.rule))){ setRule(parseInt(st.rule)); }
+      if (st.floorStr !== undefined){ $('floor').value = String(st.floorStr).replace(/[^0-9]/g,''); }
+      compute();
+    },
+    readState(){
+      return {
+        portfolioStr: $('portfolio').value.replace(/[^0-9]/g,''),
+        age: parseInt($('age').value),
+        rule: rule,
+        floorStr: $('floor').value.replace(/[^0-9]/g,'')
+      };
+    }
+  };
+})();
+
+/* ======================= COMPARE GLUE ======================= */
+(function(){
+  const sumBucket = document.getElementById('sumBucket');
+  const sumBucketSafe = document.getElementById('sumBucketSafe');
+  const sumAge = document.getElementById('sumAge');
+  const sumAgeSafe = document.getElementById('sumAgeSafe');
+  const sumGap = document.getElementById('sumGap');
+
+  function encodeOt(list){ return list.map(o => (o.type === 'income' ? 'i' : 'c') + '~' + o.amount + '~' + o.year).join(','); }
+  function encodeRc(list){ return list.map(r => (r.type === 'income' ? 'i' : 'c') + '~' + r.amount + '~' + r.start + '~' + r.end).join(','); }
+  function decodeOt(s){
+    return s.split(',').filter(Boolean).map(tok => {
+      const p = tok.split('~');
+      return { type: p[0] === 'i' ? 'income' : 'cost', amount: parseInt(p[1]) || 0, year: parseInt(p[2]) || 0 };
+    }).filter(o => o.year > 0);
+  }
+  function decodeRc(s){
+    return s.split(',').filter(Boolean).map(tok => {
+      const p = tok.split('~');
+      return { type: p[0] === 'i' ? 'income' : 'cost', amount: parseInt(p[1]) || 0, start: parseInt(p[2]) || 0, end: parseInt(p[3]) || 0 };
+    }).filter(r => r.start > 0);
+  }
+
+  function buildURL(){
+    const b = Bucket.readState(), a = Age.readState();
+    const q = new URLSearchParams();
+    q.set('p', b.portfolioStr);
+    q.set('bs', b.baseStr);
+    if (b.oneTimes.length) q.set('ot', encodeOt(b.oneTimes));
+    if (b.recurrings.length) q.set('rc', encodeRc(b.recurrings));
+    q.set('age', a.age);
+    q.set('rule', a.rule);
+    q.set('floor', a.floorStr);
+    return location.pathname + '?' + q.toString();
+  }
+
+  function updateCompare(){
+    const b = Bucket.getResult();
+    const a = Age.getResult();
+
+    if (b && b.eqPct !== null){
+      sumBucket.textContent = b.eqPct + '% growth';
+      sumBucketSafe.textContent = (100 - b.eqPct) + '% stable';
+    } else {
+      sumBucket.textContent = '\u2014';
+      sumBucketSafe.textContent = 'needs base spending';
+    }
+    sumAge.textContent = a.eqPct + '% growth';
+    sumAgeSafe.textContent = (100 - a.eqPct) + '% stable';
+
+    let gap;
+    if (b && b.eqPct !== null){
+      const g = b.eqPct - a.eqPct;
+      if (g === 0){
+        gap = 'Both land at <strong>' + b.eqPct + '% growth</strong> right now. That is your inputs lining up, not the two methods agreeing. Change your age or your spending and they will part ways.';
+      } else {
+        gap = 'The bucket method holds <strong>' + Math.abs(g) + ' point' + (Math.abs(g) === 1 ? '' : 's') + ' ' + (g > 0 ? 'more' : 'less') + '</strong> in growth assets here. It responds to how large your portfolio is relative to the spending you have mapped for the next ten years. The age rule sets the mix by age alone and does not weigh that.';
+      }
+    } else {
+      gap = 'Enter base annual spending on the bucket side to see the comparison. The age rule already has what it needs.';
+    }
+    sumGap.innerHTML = gap;
+
+    history.replaceState(null, '', buildURL());
+  }
+
+  // ---- prefill from URL ----
+  const q = new URLSearchParams(location.search);
+  const pStr = q.has('p') ? q.get('p') : '2000000';
+  Bucket.setPortfolioValue(pStr);
+  Age.setPortfolioValue(pStr);
+
+  const bpre = {};
+  if (q.has('bs')) bpre.baseStr = q.get('bs');
+  if (q.has('ot')) bpre.oneTimes = decodeOt(q.get('ot'));
+  if (q.has('rc')) bpre.recurrings = decodeRc(q.get('rc'));
+  Bucket.prefill(bpre);
+
+  const apre = {};
+  if (q.has('age')) apre.age = q.get('age');
+  if (q.has('rule')) apre.rule = q.get('rule');
+  if (q.has('floor')) apre.floorStr = q.get('floor');
+  Age.prefill(apre);
+
+  // ---- wire live updates ----
+  Bucket.setNotify(updateCompare);
+  Age.setNotify(updateCompare);
+
+  // ---- portfolio sync ----
+  let syncing = false;
+  Bucket.portfolioEl.addEventListener('input', () => {
+    if (syncing) return; syncing = true;
+    Age.setPortfolioValue(Bucket.portfolioEl.value);
+    syncing = false;
+  });
+  Age.portfolioEl.addEventListener('input', () => {
+    if (syncing) return; syncing = true;
+    Bucket.setPortfolioValue(Age.portfolioEl.value);
+    syncing = false;
+  });
+
+  updateCompare();
+})();
+</script>
+</body></html>
